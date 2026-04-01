@@ -36,7 +36,6 @@ I risultati non sono solo metriche, ma **Euro risparmiati**.
 - **Vendite perse recuperate (Stockout):** **- 78.500 unità** servite con successo
 
 ![Business Impact](img/business_impact.png)
-*(Inserire qui il grafico a barre generato dal Notebook 03)*
 
 ## 🚀 Next Steps e Deployment in Produzione
 Attualmente il sistema è un solido prototipo eseguibile in ambiente locale. 
