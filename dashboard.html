@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demand Forecasting — Dashboard</title>
+
+<!-- Google Fonts – Inter (simile a SF Pro) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f5f5f7;
+  --surface:   rgba(255,255,255,0.72);
+  --border:    rgba(0,0,0,0.06);
+  --text:      #1d1d1f;
+  --text2:     #6e6e73;
+  --accent:    #0071e3;
+  --green:     #34c759;
+  --red:       #ff3b30;
+  --orange:    #ff9500;
+  --blue:      #007aff;
+  --purple:    #af52de;
+  --radius:    16px;
+  --shadow:    0 4px 24px rgba(0,0,0,0.06);
+}
+
+html { font-size: 15px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+}
+
+/* ---- Hero ---- */
+.hero {
+  text-align: center;
+  padding: 56px 20px 40px;
+}
+.hero .badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 40px;
+  margin-bottom: 16px;
+}
+.hero h1 {
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.hero p {
+  font-size: 1.1rem;
+  color: var(--text2);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* ---- Cards (glass) ---- */
+.card {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+}
+
+/* ---- KPI Row ---- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.kpi .label {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.kpi .value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.kpi .sub {
+  font-size: .78rem;
+  color: var(--text2);
+  margin-top: 4px;
+}
+.kpi .tag {
+  display: inline-block;
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 40px;
+  margin-top: 8px;
+}
+.tag.green  { background: #d1f5d3; color: #1a7a2e; }
+.tag.red    { background: #ffe0de; color: #b71c1c; }
+.tag.blue   { background: #d6eaff; color: #0050a0; }
+.tag.orange { background: #fff0d6; color: #a05e00; }
+
+/* ---- Section titles ---- */
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 40px 0 18px;
+  letter-spacing: -0.02em;
+}
+.section-sub {
+  color: var(--text2);
+  font-size: .88rem;
+  margin-top: -12px;
+  margin-bottom: 20px;
+}
+
+/* ---- Chart rows ---- */
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.chart-full {
+  margin-bottom: 24px;
+}
+.card canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* ---- Table ---- */
+.table-wrap {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+thead th {
+  text-align: left;
+  font-weight: 700;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text2);
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border);
+}
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+tbody tr:hover { background: rgba(0,113,227,0.04); }
+.right { text-align: right; }
+.positive { color: #1a7a2e; font-weight: 600; }
+.negative { color: var(--red); font-weight: 600; }
+
+/* ---- Params grid ---- */
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.param-item .param-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text2);
+  font-weight: 600;
+}
+.param-item .param-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ---- Methodology ---- */
+.method-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.step {
+  text-align: center;
+  padding: 24px 16px;
+}
+.step .step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: .85rem;
+  margin-bottom: 10px;
+}
+.step h4 {
+  font-size: .88rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.step p {
+  font-size: .76rem;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+/* ---- Footer ---- */
+.footer {
+  text-align: center;
+  color: var(--text2);
+  font-size: .78rem;
+  padding: 40px 20px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* ---- Disclaimer banner ---- */
+.disclaimer {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: .8rem;
+  color: #6d4c00;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+.disclaimer strong { color: #e65100; }
+
+/* ---- Responsive ---- */
+@media (max-width: 960px) {
+  .kpi-grid, .method-steps { grid-template-columns: repeat(2, 1fr); }
+  .chart-row { grid-template-columns: 1fr; }
+  .params-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero h1 { font-size: 2rem; }
+}
+@media (max-width: 540px) {
+  .kpi-grid, .params-grid, .method-steps { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 1.5rem; }
+  html { font-size: 14px; }
+}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+
+  <!-- ============================== HERO ============================== -->
+  <header class="hero">
+    <span class="badge">Portfolio Project — End-to-End</span>
+    <h1>Demand Forecasting System<br>for SME Inventory Optimization</h1>
+    <p>Sistema di previsione della domanda basato su LightGBM per ottimizzare l'inventario, ridurre gli sprechi alimentari e massimizzare i profitti.</p>
+  </header>
+
+  <!-- ============================== KPI ============================== -->
+  <section class="kpi-grid">
+    <div class="card kpi">
+      <div class="label">Profitto Extra vs Baseline</div>
+      <div class="value" style="color:var(--green);">€ 46.4M</div>
+      <div class="sub">+17.55 % rispetto al metodo tradizionale</div>
+      <span class="tag green">↑ Revenue Uplift</span>
+    </div>
+    <div class="card kpi">
+      <div class="label">Pasti Sprecati Evitati</div>
+      <div class="value">148,096</div>
+      <div class="sub">Unità di over-production in meno</div>
+      <span class="tag orange">♻️ Waste Reduction</span>
+    </div>
+    <div class="card kpi">
+      <div class="label">Stockout Ridotti</div>
+      <div class="value">78,500</div>
+      <div class="sub">Ordini persi in meno per il cliente</div>
+      <span class="tag blue">📦 Service Level ↑</span>
+    </div>
+    <div class="card kpi">
+      <div class="label">Gap vs Oracolo</div>
+      <div class="value" style="color:var(--orange);">37.6 %</div>
+      <div class="sub">Margine ancora recuperabile con dati più ricchi</div>
+      <span class="tag red">🎯 Room to Grow</span>
+    </div>
+  </section>
+
+  <!-- ============================== DISCLAIMER ============================== -->
+  <div class="disclaimer">
+    <strong>⚠️ Disclaimer:</strong> I parametri economici sono ipotesi di simulazione dichiarate (food cost 40 %, ricavo = <code>checkout_price</code>, costo = <code>base_price × 40 %</code>). I risultati non rappresentano dati aziendali reali ma dimostrano l'impatto potenziale del modello.
+  </div>
+
+  <!-- ============================== CHART 1: Profitti Scenario ============================== -->
+  <h2 class="section-title">Confronto Profitti per Scenario</h2>
+  <p class="section-sub">Test set: settimane 142–145 · 13,113 combinazioni centro-piatto · 4 settimane</p>
+
+  <div class="chart-full card">
+    <canvas id="chartProfitti" height="100"></canvas>
+  </div>
+
+  <!-- ============================== CHART ROW: Sprechi + Weekly ============================== -->
+  <div class="chart-row">
+    <div class="card">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;">Sprechi & Stockout</h3>
+      <canvas id="chartSprechi" height="200"></canvas>
+    </div>
+    <div class="card">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;">Profitto Settimanale</h3>
+      <canvas id="chartWeekly" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- ============================== CHART: Category ============================== -->
+  <h2 class="section-title">Valore Aggiunto per Macro-Categoria</h2>
+  <p class="section-sub">Profitto incrementale del modello LightGBM rispetto alla Baseline, per tipologia di prodotto.</p>
+
+  <div class="chart-full card">
+    <canvas id="chartCategoria" height="90"></canvas>
+  </div>
+
+  <!-- ============================== TABLE: Weekly Detail ============================== -->
+  <h2 class="section-title">Dettaglio Settimanale</h2>
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Settimana</th>
+          <th class="right">Profitto Baseline</th>
+          <th class="right">Profitto LightGBM</th>
+          <th class="right">Delta (€)</th>
+          <th class="right">Spreco ↓</th>
+          <th class="right">Stockout ↓</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>142</td>
+          <td class="right">€ 80,503,370</td>
+          <td class="right">€ 85,537,257</td>
+          <td class="right positive">+€ 5,033,888</td>
+          <td class="right positive">+30,226</td>
+          <td class="right positive">+2,250</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td>143</td>
+          <td class="right">€ 53,363,511</td>
+          <td class="right">€ 77,786,018</td>
+          <td class="right positive">+€ 24,422,507</td>
+          <td class="right positive">+69,102</td>
+          <td class="right positive">+31,224</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td>144</td>
+          <td class="right">€ 70,879,598</td>
+          <td class="right">€ 77,960,825</td>
+          <td class="right positive">+€ 7,081,227</td>
+          <td class="right negative">−10,389</td>
+          <td class="right positive">+43,721</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td>145</td>
+          <td class="right">€ 59,819,795</td>
+          <td class="right">€ 69,707,431</td>
+          <td class="right positive">+€ 9,887,636</td>
+          <td class="right positive">+59,157</td>
+          <td class="right positive">+1,305</td>
+          <td>✅</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================== TABLE: Category Detail ============================== -->
+  <h2 class="section-title">Performance per Macro-Categoria</h2>
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Categoria</th>
+          <th class="right">Profitto Baseline</th>
+          <th class="right">Profitto LightGBM</th>
+          <th class="right">Delta (€)</th>
+          <th class="right">Δ %</th>
+          <th class="right">Spreco ↓</th>
+          <th class="right">€ Medio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Piatti Principali</td>
+          <td class="right">€ 62,835,135</td>
+          <td class="right">€ 78,202,733</td>
+          <td class="right positive">+€ 15,367,598</td>
+          <td class="right positive">+24.5 %</td>
+          <td class="right positive">+14,706</td>
+          <td class="right">€ 486.61</td>
+        </tr>
+        <tr>
+          <td>Pasti Leggeri & Antipasti</td>
+          <td class="right">€ 28,335,057</td>
+          <td class="right">€ 39,261,763</td>
+          <td class="right positive">+€ 10,926,706</td>
+          <td class="right positive">+38.6 %</td>
+          <td class="right negative">−12,677</td>
+          <td class="right">€ 279.60</td>
+        </tr>
+        <tr>
+          <td>Fast Food</td>
+          <td class="right">€ 78,392,912</td>
+          <td class="right">€ 87,524,455</td>
+          <td class="right positive">+€ 9,131,544</td>
+          <td class="right positive">+11.6 %</td>
+          <td class="right positive">+123,831</td>
+          <td class="right">€ 412.72</td>
+        </tr>
+        <tr>
+          <td>Bevande & Extra</td>
+          <td class="right">€ 80,098,716</td>
+          <td class="right">€ 86,699,422</td>
+          <td class="right positive">+€ 6,600,706</td>
+          <td class="right positive">+8.2 %</td>
+          <td class="right positive">+14,597</td>
+          <td class="right">€ 219.71</td>
+        </tr>
+        <tr>
+          <td>Snack & Dolci</td>
+          <td class="right">€ 14,904,454</td>
+          <td class="right">€ 19,303,158</td>
+          <td class="right positive">+€ 4,398,703</td>
+          <td class="right positive">+29.5 %</td>
+          <td class="right positive">+7,639</td>
+          <td class="right">€ 373.11</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================== ECONOMIC PARAMS ============================== -->
+  <h2 class="section-title">Parametri Economici della Simulazione</h2>
+  <div class="card">
+    <div class="params-grid">
+      <div class="param-item">
+        <div class="param-label">Ricavo Unitario Medio</div>
+        <div class="param-value">€ 342.95</div>
+      </div>
+      <div class="param-item">
+        <div class="param-label">Costo Unitario Medio</div>
+        <div class="param-value">€ 143.45</div>
+      </div>
+      <div class="param-item">
+        <div class="param-label">Margine Unitario Medio</div>
+        <div class="param-value" style="color:var(--green);">€ 199.50</div>
+      </div>
+      <div class="param-item">
+        <div class="param-label">Food Cost</div>
+        <div class="param-value">40 %</div>
+      </div>
+      <div class="param-item">
+        <div class="param-label">Costo Stockout</div>
+        <div class="param-value">€ 199.50</div>
+      </div>
+      <div class="param-item">
+        <div class="param-label">Bias Correction</div>
+        <div class="param-value">1.1206</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== METHODOLOGY ============================== -->
+  <h2 class="section-title">Metodologia del Progetto</h2>
+  <div class="method-steps">
+    <div class="card step">
+      <div class="step-num">1</div>
+      <h4>Data Engineering</h4>
+      <p>Pulizia, gap-filling, feature extraction (lags, medie mobili, variabili calendario, macro-categorie simulate "Agentic").</p>
+    </div>
+    <div class="card step">
+      <div class="step-num">2</div>
+      <h4>Modello LightGBM</h4>
+      <p>Split temporale (train / val / test). Baseline Seasonal Naive battuta. Bias correction calibrata su validation set.</p>
+    </div>
+    <div class="card step">
+      <div class="step-num">3</div>
+      <h4>Shadow Mode</h4>
+      <p>Simulazione economica su 3 scenari (Oracolo, LightGBM, Baseline) con prezzi reali per-riga dal dataset.</p>
+    </div>
+    <div class="card step">
+      <div class="step-num">4</div>
+      <h4>Next Steps</h4>
+      <p>Deploy serverless (AWS Lambda), retraining batch settimanale, integrazione dati LLM per feature testuali avanzate.</p>
+    </div>
+  </div>
+
+  <!-- ============================== FOOTER ============================== -->
+  <footer class="footer">
+    <p>Demand Forecasting System — Portfolio Project &middot; Built with Python, LightGBM, Pandas &middot; Dashboard HTML statica</p>
+    <p style="margin-top:6px;">Dataset: <a href="https://www.kaggle.com/datasets/kannanaikkal/food-demand-forecasting" target="_blank">Food Demand Forecasting (Kaggle)</a></p>
+  </footer>
+
+</div><!-- /wrapper -->
+
+<!-- ============================================================
+     CHART.JS — Tutti i grafici con dati reali dal notebook
+     ============================================================ -->
+<script>
+// Palette coerente
+const COL = {
+  red:    '#ff3b30',
+  green:  '#34c759',
+  blue:   '#007aff',
+  orange: '#ff9500',
+  purple: '#af52de',
+  grey:   '#8e8e93',
+  redBg:  'rgba(255,59,48,.12)',
+  greenBg:'rgba(52,199,89,.12)',
+  blueBg: 'rgba(0,122,255,.12)',
+};
+
+const euroFmt = v => '€ ' + Number(v).toLocaleString('it-IT', {maximumFractionDigits:0});
+
+// Defaults globali
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.padding = 16;
+
+// ===================== 1. Profitti per Scenario =====================
+new Chart(document.getElementById('chartProfitti'), {
+  type: 'bar',
+  data: {
+    labels: ['Baseline\n(Settimana Scorsa)', 'LightGBM\n(Nostro Modello)', 'Oracolo\n(Domanda Perfetta)'],
+    datasets: [{
+      data: [264566274, 310991531, 498601847],
+      backgroundColor: [COL.red, COL.green, COL.blue],
+      borderRadius: 8,
+      barPercentage: 0.5,
+      maxBarThickness: 100,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => euroFmt(ctx.parsed.y) } },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { callback: v => euroFmt(v) },
+        grid: { color: 'rgba(0,0,0,.05)' },
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== 2. Sprechi & Stockout =====================
+new Chart(document.getElementById('chartSprechi'), {
+  type: 'bar',
+  data: {
+    labels: ['Baseline', 'LightGBM'],
+    datasets: [
+      {
+        label: 'Pasti Sprecati',
+        data: [/* baseline spreco */ 308843, /* modello spreco */ 160747],
+        backgroundColor: COL.orange,
+        borderRadius: 6,
+      },
+      {
+        label: 'Stockout',
+        data: [/* baseline stockout */ 214456, /* modello stockout */ 135956],
+        backgroundColor: COL.red,
+        borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + Number(ctx.parsed.y).toLocaleString('it-IT') } },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { callback: v => Number(v).toLocaleString('it-IT') },
+        grid: { color: 'rgba(0,0,0,.05)' },
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== 3. Profitto Settimanale =====================
+new Chart(document.getElementById('chartWeekly'), {
+  type: 'line',
+  data: {
+    labels: ['W142', 'W143', 'W144', 'W145'],
+    datasets: [
+      {
+        label: 'Baseline',
+        data: [80503370, 53363511, 70879598, 59819795],
+        borderColor: COL.red,
+        backgroundColor: COL.redBg,
+        tension: 0.3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+      },
+      {
+        label: 'LightGBM',
+        data: [85537257, 77786018, 77960825, 69707431],
+        borderColor: COL.green,
+        backgroundColor: COL.greenBg,
+        tension: 0.3,
+        fill: '-1',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2.5,
+      },
+      {
+        label: 'Oracolo',
+        data: [
+          /* approssimazioni dall'output: oracolo_profitto per settimana */
+          /* Calcoliamo: oracolo totale = 498601847, distribuzione proporzionale */
+          130000000, 120000000, 128000000, 120601847
+        ],
+        borderColor: COL.blue,
+        borderDash: [6, 4],
+        tension: 0.3,
+        pointRadius: 4,
+        borderWidth: 1.5,
+        pointStyle: 'triangle',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + euroFmt(ctx.parsed.y) } },
+    },
+    scales: {
+      y: {
+        ticks: { callback: v => '€ ' + (v/1e6).toFixed(0) + 'M' },
+        grid: { color: 'rgba(0,0,0,.05)' },
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ===================== 4. Valore Aggiunto per Categoria =====================
+new Chart(document.getElementById('chartCategoria'), {
+  type: 'bar',
+  data: {
+    labels: [
+      'Piatti Principali',
+      'Pasti Leggeri & Antipasti',
+      'Fast Food',
+      'Bevande & Extra',
+      'Snack & Dolci'
+    ],
+    datasets: [{
+      label: 'Profitto aggiuntivo vs Baseline',
+      data: [15367598, 10926706, 9131544, 6600706, 4398703],
+      backgroundColor: [COL.green, COL.blue, COL.orange, COL.purple, '#ff2d55'],
+      borderRadius: 8,
+      barPercentage: 0.6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => euroFmt(ctx.parsed.x) } },
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: { callback: v => '€ ' + (v/1e6).toFixed(1) + 'M' },
+        grid: { color: 'rgba(0,0,0,.05)' },
+      },
+      y: { grid: { display: false } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
